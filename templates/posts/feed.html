@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Feed - MiniSocial{% endblock %}
+
+{% block content %}
+<div class="feed-grid">
+  <!-- Left Sidebar: User Mini Card -->
+  <aside class="sidebar-left">
+    <div class="sidebar-sticky">
+      {% if user.is_authenticated %}
+        <div class="card profile-card-widget">
+          <a href="{% url 'accounts:my_profile' %}">
+            {% if user.avatar_url %}
+              <img src="{{ user.avatar_url }}" alt="{{ user.username }}" class="avatar avatar-lg">
+            {% else %}
+              <div class="avatar avatar-lg avatar-fallback">{{ user.username|slice:":1"|upper }}</div>
+            {% endif %}
+          </a>
+          <h2 class="profile-card-name">{{ user.display_name }}</h2>
+          <p class="profile-card-handle">@{{ user.username }}</p>
+
+          {% if user.bio %}
+            <p class="profile-card-bio">{{ user.bio|truncatechars:90 }}</p>
+          {% endif %}
+
+          <div class="profile-stats-row">
+            <div class="profile-stat-item">
+              <span class="stat-value">{{ user.posts.count }}</span>
+              <span class="stat-label">Posts</span>
+            </div>
+            <div class="profile-stat-item">
+              <span class="stat-value">{{ user.likes_received_count }}</span>
+              <span class="stat-label">Likes</span>
+            </div>
+          </div>
+
+          <a href="{% url 'accounts:my_profile' %}" class="btn btn-outline btn-sm" style="width: 100%;">View Profile</a>
+        </div>
+      {% else %}
+        <div class="card profile-card-widget">
+          <h2 class="profile-card-name" style="margin-bottom: 0.5rem;">Join MiniSocial</h2>
+          <p class="profile-card-bio">Connect with friends, share updates, upload photos, and like posts in real time.</p>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
+            <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Create Account</a>
+            <a href="{% url 'accounts:login' %}" class="btn btn-outline btn-sm">Sign In</a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </aside>
+
+  <!-- Center Column: Post Composer & Main Feed -->
+  <section class="feed-main">
+    <!-- Quick Inline Composer (if authenticated) -->
+    {% if user.is_authenticated %}
+      <div class="card composer-card">
+        <form action="{% url 'posts:post_create' %}" method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="composer-header">
+            {% if user.avatar_url %}
+              <img src="{{ user.avatar_url }}" alt="{{ user.username }}" class="avatar avatar-md">
+            {% else %}
+              <div class="avatar avatar-md avatar-fallback">{{ user.username|slice:":1"|upper }}</div>
+            {% endif %}
+            <div class="composer-body">
+              {{ post_form.content }}
+              
+              <!-- Image Preview Box -->
+              <div id="image-preview-container" style="display: none;"></div>
+
+              <div class="composer-footer">
+                <div class="composer-tools">
+                  <label for="post-image-input" class="upload-icon-btn" title="Attach an image">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    <span>Photo</span>
+                  </label>
+                  {{ post_form.image }}
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Post</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    {% endif %}
+
+    <!-- Search Active Notice -->
+    {% if query %}
+      <div class="card" style="padding: 0.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+        <span>Showing results for: <strong>"{{ query }}"</strong></span>
+        <a href="{% url 'posts:feed' %}" class="btn btn-ghost btn-sm">Clear search</a>
+      </div>
+    {% endif %}
+
+    <!-- Posts Stream -->
+    {% if page_obj %}
+      {% for post in page_obj %}
+        <article class="card post-card" id="post-{{ post.pk }}">
+          <!-- Post Header -->
+          <div class="post-header">
+            <div class="post-author-info">
+              <a href="{% url 'accounts:profile' username=post.author.username %}">
+                {% if post.author.avatar_url %}
+                  <img src="{{ post.author.avatar_url }}" alt="{{ post.author.username }}" class="avatar avatar-md">
+                {% else %}
+                  <div class="avatar avatar-md avatar-fallback">{{ post.author.username|slice:":1"|upper }}</div>
+                {% endif %}
+              </a>
+              <div class="post-meta">
+                <a href="{% url 'accounts:profile' username=post.author.username %}" class="post-author-name">
+                  {{ post.author.display_name }}
+                </a>
+                <span class="post-author-handle">@{{ post.author.username }} &bull; {{ post.created_at|timesince }} ago</span>
+              </div>
+            </div>
+
+            <!-- Author Actions -->
+            {% if user.is_authenticated and post.author == user %}
+              <a href="{% url 'posts:post_delete' pk=post.pk %}" class="btn btn-ghost btn-sm" title="Delete post" style="color: var(--text-subtle);">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </a>
+            {% endif %}
+          </div>
+
+          <!-- Post Content -->
+          <div class="post-content">
+            {{ post.content|linebreaksbr }}
+          </div>
+
+          <!-- Post Image (if attached) -->
+          {% if post.image %}
+            <div class="post-media">
+              <a href="{% url 'posts:post_detail' pk=post.pk %}">
+                <img src="{{ post.image.url }}" alt="Post image" loading="lazy">
+              </a>
+            </div>
+          {% endif %}
+
+          <!-- Post Actions (Like, Comment, Detail) -->
+          <div class="post-actions">
+            <div class="action-group">
+              <!-- Like button (AJAX supported) -->
+              {% if user.is_authenticated %}
+                <button type="button" 
+                        class="btn-action btn-like btn-like-ajax {% if user in post.likes.all %}liked{% endif %}"
+                        data-url="{% url 'posts:like_toggle' pk=post.pk %}"
+                        title="Like post">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                  </svg>
+                  <span class="like-count">{{ post.like_count }}</span>
+                </button>
+              {% else %}
+                <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn-action btn-like" title="Sign in to like">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                  </svg>
+                  <span>{{ post.like_count }}</span>
+                </a>
+              {% endif %}
+
+              <!-- Comment Button -->
+              <a href="{% url 'posts:post_detail' pk=post.pk %}" class="btn-action" title="View discussion">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>{{ post.comment_count }}</span>
+              </a>
+            </div>
+
+            <a href="{% url 'posts:post_detail' pk=post.pk %}" class="btn-action" style="font-size: 0.8rem;">
+              Full Thread &rarr;
+            </a>
+          </div>
+
+          <!-- Comments Preview (Latest 2 comments) -->
+          {% if post.comments.exists %}
+            <div class="post-comments-preview">
+              <div class="comment-list">
+                {% for comment in post.comments.all|slice:":2" %}
+                  <div class="comment-item">
+                    <a href="{% url 'accounts:profile' username=comment.author.username %}">
+                      {% if comment.author.avatar_url %}
+                        <img src="{{ comment.author.avatar_url }}" alt="{{ comment.author.username }}" class="avatar avatar-sm">
+                      {% else %}
+                        <div class="avatar avatar-sm avatar-fallback">{{ comment.author.username|slice:":1"|upper }}</div>
+                      {% endif %}
+                    </a>
+                    <div class="comment-bubble">
+                      <div class="comment-header">
+                        <a href="{% url 'accounts:profile' username=comment.author.username %}" class="comment-author">
+                          {{ comment.author.display_name }}
+                        </a>
+                        <span class="comment-time">{{ comment.created_at|timesince }} ago</span>
+                      </div>
+                      <div class="comment-body">{{ comment.content }}</div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+
+          <!-- Inline quick comment form -->
+          {% if user.is_authenticated %}
+            <form action="{% url 'posts:comment_create' pk=post.pk %}" method="post" class="comment-form">
+              {% csrf_token %}
+              {% if user.avatar_url %}
+                <img src="{{ user.avatar_url }}" alt="{{ user.username }}" class="avatar avatar-sm">
+              {% else %}
+                <div class="avatar avatar-sm avatar-fallback">{{ user.username|slice:":1"|upper }}</div>
+              {% endif %}
+              <input type="text" name="content" class="comment-input" placeholder="Write a reply..." required autocomplete="off">
+              <button type="submit" class="btn btn-ghost btn-sm" title="Reply">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </form>
+          {% endif %}
+        </article>
+      {% endfor %}
+
+      <!-- Pagination -->
+      {% if page_obj.has_other_pages %}
+        <div style="display: flex; justify-content: center; gap: 0.5rem; margin: 2rem 0;">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="btn btn-outline btn-sm">&larr; Previous</a>
+          {% endif %}
+          <span style="display: flex; align-items: center; padding: 0 0.75rem; font-size: 0.9rem; color: var(--text-muted);">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+          </span>
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="btn btn-outline btn-sm">Next &rarr;</a>
+          {% endif %}
+        </div>
+      {% endif %}
+
+    {% else %}
+      <div class="card" style="text-align: center; padding: 3rem 1.5rem;">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--text-subtle)" stroke-width="1.5" style="margin: 0 auto 1rem auto;">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">No posts yet</h3>
+        <p style="color: var(--text-muted); font-size: 0.92rem; max-width: 380px; margin: 0 auto 1.5rem auto;">
+          {% if query %}
+            No posts matched your search for "{{ query }}". Try searching for something else!
+          {% else %}
+            Be the first person to share a post and start the conversation!
+          {% endif %}
+        </p>
+        {% if user.is_authenticated %}
+          <a href="{% url 'posts:post_create' %}" class="btn btn-primary btn-sm">Create First Post</a>
+        {% else %}
+          <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Join to Post</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Right Sidebar: Suggested People & Discover -->
+  <aside class="sidebar-right">
+    <div class="sidebar-sticky">
+      {% if suggested_users %}
+        <div class="card">
+          <h3 class="widget-title">Community Members</h3>
+          <div class="user-list">
+            {% for member in suggested_users %}
+              <div class="user-item">
+                <div class="user-item-info">
+                  <a href="{% url 'accounts:profile' username=member.username %}">
+                    {% if member.avatar_url %}
+                      <img src="{{ member.avatar_url }}" alt="{{ member.username }}" class="avatar avatar-sm">
+                    {% else %}
+                      <div class="avatar avatar-sm avatar-fallback">{{ member.username|slice:":1"|upper }}</div>
+                    {% endif %}
+                  </a>
+                  <div class="user-item-names">
+                    <a href="{% url 'accounts:profile' username=member.username %}" class="user-item-name">
+                      {{ member.display_name }}
+                    </a>
+                    <div class="user-item-handle">@{{ member.username }}</div>
+                  </div>
+                </div>
+                <a href="{% url 'accounts:profile' username=member.username %}" class="btn btn-ghost btn-sm" style="font-size: 0.8rem; padding: 0.25rem 0.6rem;">View</a>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="card" style="background-color: var(--primary-light); border-color: #bfdbfe;">
+        <h4 style="font-size: 0.92rem; font-weight: 700; color: var(--primary-hover); margin-bottom: 0.4rem;">MiniSocial MVT</h4>
+        <p style="font-size: 0.82rem; color: #1e3a8a; line-height: 1.4;">
+          A lightweight full-stack Django social web app featuring authentication, profile picture uploads, posts, like toggling, and comment threads.
+        </p>
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

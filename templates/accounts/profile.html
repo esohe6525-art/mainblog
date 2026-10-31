@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user.display_name }} (@{{ profile_user.username }}) - MiniSocial{% endblock %}
+
+{% block content %}
+<div style="max-width: 760px; margin: 0 auto;">
+  <!-- Profile Header Card -->
+  <div class="card profile-header-card">
+    <div class="profile-banner"></div>
+    <div class="profile-info-wrap">
+      <div style="position: relative;">
+        {% if profile_user.avatar_url %}
+          <img src="{{ profile_user.avatar_url }}" alt="{{ profile_user.username }}" class="avatar avatar-xl profile-avatar-large">
+        {% else %}
+          <div class="avatar avatar-xl avatar-fallback profile-avatar-large">
+            {{ profile_user.username|slice:":1"|upper }}
+          </div>
+        {% endif %}
+      </div>
+
+      <div>
+        {% if is_own_profile %}
+          <a href="{% url 'accounts:profile_edit' %}" class="btn btn-outline btn-sm">Edit Profile</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="profile-details">
+      <h1 class="profile-title-name">{{ profile_user.display_name }}</h1>
+      <div class="profile-title-handle">@{{ profile_user.username }}</div>
+
+      {% if profile_user.bio %}
+        <p class="profile-bio-text">{{ profile_user.bio|linebreaksbr }}</p>
+      {% endif %}
+
+      <div class="profile-meta-badges">
+        {% if profile_user.location %}
+          <div class="badge-item">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span>{{ profile_user.location }}</span>
+          </div>
+        {% endif %}
+
+        <div class="badge-item">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span>Joined {{ profile_user.date_joined|date:"F Y" }}</span>
+        </div>
+      </div>
+
+      <div class="profile-stats-row" style="max-width: 400px; margin-bottom: 0;">
+        <div class="profile-stat-item">
+          <span class="stat-value">{{ profile_user.posts.count }}</span>
+          <span class="stat-label">Posts</span>
+        </div>
+        <div class="profile-stat-item">
+          <span class="stat-value">{{ profile_user.likes_received_count }}</span>
+          <span class="stat-label">Likes Received</span>
+        </div>
+        <div class="profile-stat-item">
+          <span class="stat-value">{{ profile_user.comments.count }}</span>
+          <span class="stat-label">Comments</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User's Posts Section -->
+  <div style="margin-top: 2rem;">
+    <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 1rem;">
+      Posts by {{ profile_user.display_name }}
+    </h3>
+
+    {% if posts %}
+      {% for post in posts %}
+        <article class="card post-card" id="post-{{ post.pk }}">
+          <div class="post-header">
+            <div class="post-author-info">
+              {% if post.author.avatar_url %}
+                <img src="{{ post.author.avatar_url }}" alt="{{ post.author.username }}" class="avatar avatar-md">
+              {% else %}
+                <div class="avatar avatar-md avatar-fallback">{{ post.author.username|slice:":1"|upper }}</div>
+              {% endif %}
+              <div class="post-meta">
+                <span class="post-author-name">{{ post.author.display_name }}</span>
+                <span class="post-author-handle">@{{ post.author.username }} &bull; {{ post.created_at|timesince }} ago</span>
+              </div>
+            </div>
+
+            {% if user.is_authenticated and post.author == user %}
+              <a href="{% url 'posts:post_delete' pk=post.pk %}" class="btn btn-ghost btn-sm" title="Delete post" style="color: var(--text-subtle);">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </a>
+            {% endif %}
+          </div>
+
+          <div class="post-content">
+            {{ post.content|linebreaksbr }}
+          </div>
+
+          {% if post.image %}
+            <div class="post-media">
+              <a href="{% url 'posts:post_detail' pk=post.pk %}">
+                <img src="{{ post.image.url }}" alt="Post image">
+              </a>
+            </div>
+          {% endif %}
+
+          <div class="post-actions">
+            <div class="action-group">
+              {% if user.is_authenticated %}
+                <button type="button" 
+                        class="btn-action btn-like btn-like-ajax {% if user in post.likes.all %}liked{% endif %}"
+                        data-url="{% url 'posts:like_toggle' pk=post.pk %}"
+                        title="Like post">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                  </svg>
+                  <span class="like-count">{{ post.like_count }}</span>
+                </button>
+              {% else %}
+                <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn-action btn-like">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                  </svg>
+                  <span>{{ post.like_count }}</span>
+                </a>
+              {% endif %}
+
+              <a href="{% url 'posts:post_detail' pk=post.pk %}" class="btn-action">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>{{ post.comment_count }}</span>
+              </a>
+            </div>
+
+            <a href="{% url 'posts:post_detail' pk=post.pk %}" class="btn-action" style="font-size: 0.8rem;">
+              View Thread &rarr;
+            </a>
+          </div>
+        </article>
+      {% endfor %}
+    {% else %}
+      <div class="card" style="text-align: center; padding: 2.5rem 1rem;">
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          {{ profile_user.display_name }} has not published any posts yet.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Post - MiniSocial{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 3rem auto;">
+  <div class="card" style="padding: 2rem; text-align: center;">
+    <div style="width: 54px; height: 54px; border-radius: 50%; background-color: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem auto;">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      </svg>
+    </div>
+
+    <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 0.5rem;">Delete this post?</h2>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+      This action cannot be undone. Your post and all associated comments will be permanently removed.
+    </p>
+
+    <div style="background-color: var(--bg-input); padding: 1rem; border-radius: var(--radius-md); text-align: left; margin-bottom: 1.5rem; font-size: 0.92rem; color: var(--text-main);">
+      "{{ post.content|truncatechars:150 }}"
+    </div>
+
+    <form method="post" style="display: flex; justify-content: center; gap: 0.75rem;">
+      {% csrf_token %}
+      <a href="{% url 'posts:feed' %}" class="btn btn-outline btn-sm">Cancel</a>
+      <button type="submit" class="btn btn-danger-outline btn-sm" style="background-color: var(--accent-heart); color: #fff; border-color: var(--accent-heart);">
+        Yes, Delete
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

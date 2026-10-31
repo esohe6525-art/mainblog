@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile - MiniSocial{% endblock %}
+
+{% block content %}
+<div class="auth-container" style="max-width: 540px;">
+  <div style="margin-bottom: 1rem;">
+    <a href="{% url 'accounts:my_profile' %}" class="btn btn-ghost btn-sm">&larr; Back to Profile</a>
+  </div>
+
+  <div class="card auth-card">
+    <div class="auth-header">
+      <h1>Edit Profile</h1>
+      <p>Update your personal info and avatar</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-error" style="margin-bottom: 1rem;">
+          {{ form.non_field_errors.0 }}
+        </div>
+      {% endif %}
+
+      <!-- Avatar Preview & Change -->
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div style="position: relative; display: inline-block;">
+          {% if user.avatar_url %}
+            <img id="avatar-preview-img" src="{{ user.avatar_url }}" alt="Avatar" class="avatar avatar-xl" style="margin: 0 auto; border: 3px solid var(--border-color);">
+          {% else %}
+            <img id="avatar-preview-img" src="" alt="Avatar preview" class="avatar avatar-xl" style="display: none; margin: 0 auto; border: 3px solid var(--border-color);">
+            <div id="avatar-preview-fallback" class="avatar avatar-xl avatar-fallback" style="margin: 0 auto;">
+              {{ user.username|slice:":1"|upper }}
+            </div>
+          {% endif %}
+        </div>
+        <div style="margin-top: 0.6rem;">
+          <label for="id_avatar" class="upload-icon-btn" style="cursor: pointer; display: inline-flex;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            <span>Change Profile Picture</span>
+          </label>
+          <div style="display: none;">{{ form.avatar }}</div>
+        </div>
+        {% if form.avatar.errors %}
+          <div class="form-error">{{ form.avatar.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_name">Display Name</label>
+        {{ form.name }}
+        {% if form.name.errors %}
+          <div class="form-error">{{ form.name.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_location">Location</label>
+        {{ form.location }}
+        {% if form.location.errors %}
+          <div class="form-error">{{ form.location.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_bio">Bio</label>
+        {{ form.bio }}
+        {% if form.bio.errors %}
+          <div class="form-error">{{ form.bio.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <a href="{% url 'accounts:my_profile' %}" class="btn btn-outline btn-sm">Cancel</a>
+        <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

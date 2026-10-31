@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - MiniSocial{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <div class="card auth-card">
+    <div class="auth-header">
+      <h1>Welcome back</h1>
+      <p>Log in with your username or email address</p>
+    </div>
+
+    <form method="post" action="{% url 'accounts:login' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next_url }}">
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-error" style="margin-bottom: 1rem;">
+          {{ form.non_field_errors.0 }}
+        </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label for="id_login_identifier">{{ form.login_identifier.label }}</label>
+        {{ form.login_identifier }}
+        {% if form.login_identifier.errors %}
+          <div class="form-error">{{ form.login_identifier.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_password">{{ form.password.label }}</label>
+        {{ form.password }}
+        {% if form.password.errors %}
+          <div class="form-error">{{ form.password.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; padding: 0.7rem;">
+        Sign In
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Don't have an account yet? <a href="{% url 'accounts:register' %}">Create an account</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
